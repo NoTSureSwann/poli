@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 63da334a-d809-4287-84b4-96e4887911b5
+
+localResources:
+  collections:
+    - ..\Klinik-Merah-Putih.postman_collection.json

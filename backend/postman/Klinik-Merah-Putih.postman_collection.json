@@ -1,0 +1,575 @@
+{
+    "info": {
+        "name": "Klinik Merah Putih API",
+        "_postman_id": "klinik-merah-putih-v1",
+        "description": "API Collection lengkap untuk Klinik Merah Putih.\nCRUD Monolith.\nDeveloper: swandrax",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{access_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000/api/v1"
+        },
+        {
+            "key": "access_token",
+            "value": ""
+        },
+        {
+            "key": "refresh_token",
+            "value": ""
+        },
+        {
+            "key": "pasien_id",
+            "value": ""
+        },
+        {
+            "key": "rekam_id",
+            "value": ""
+        },
+        {
+            "key": "antrian_id",
+            "value": ""
+        },
+        {
+            "key": "resep_id",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "pm.environment.set('access_token', res.data.access_token);",
+                                    "pm.environment.set('refresh_token', res.data.refresh_token);",
+                                    "pm.test('Login berhasil', () => pm.response.to.have.status(200));",
+                                    "pm.test('Token ada', () => pm.expect(res.data.access_token).to.not.be.empty);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/auth/login",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"email\": \"admin@puskesmas.id\", \"password\": \"Admin1234!\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/auth/refresh",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"refresh_token\": \"{{refresh_token}}\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/auth/me"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Pasien",
+            "item": [
+                {
+                    "name": "List Pasien",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Ada pagination', () => pm.expect(pm.response.json().pagination).to.exist);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/pasien?page=1&limit=10&search=",
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "description": "Cari by nama/NIK"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Registrasi Pasien Baru",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "pm.environment.set('pasien_id', res.data.id);",
+                                    "pm.test('Pasien berhasil dibuat', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/pasien",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nama\": \"Budi Santoso\",\n  \"nik\": \"3201234567890001\",\n  \"bpjs_id\": \"0001234567890\",\n  \"tanggal_lahir\": \"1990-05-15\",\n  \"jenis_kelamin\": \"L\",\n  \"golongan_darah\": \"O\",\n  \"alamat\": \"Jl. Merdeka No. 1, Jakarta\",\n  \"no_telepon\": \"08123456789\",\n  \"email\": \"budi@email.com\",\n  \"alergi\": [\"Penisilin\", \"Aspirin\"]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Detail Pasien",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/pasien/{{pasien_id}}"
+                    }
+                },
+                {
+                    "name": "Update Pasien",
+                    "request": {
+                        "method": "PUT",
+                        "url": "{{base_url}}/pasien/{{pasien_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"alamat\": \"Jl. Baru No. 99, Jakarta\",\n  \"no_telepon\": \"08198765432\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Cari by NIK",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/pasien/nik/3201234567890001"
+                    }
+                },
+                {
+                    "name": "Riwayat Rekam Medis Pasien",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/pasien/{{pasien_id}}/rekam-medis"
+                    }
+                },
+                {
+                    "name": "Hapus Pasien (Soft Delete)",
+                    "request": {
+                        "method": "DELETE",
+                        "url": "{{base_url}}/pasien/{{pasien_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Rekam Medis",
+            "item": [
+                {
+                    "name": "List Rekam Medis",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/rekam-medis?pasien_id={{pasien_id}}&page=1&limit=10",
+                            "query": [
+                                {
+                                    "key": "pasien_id",
+                                    "value": "{{pasien_id}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Buat Rekam Medis",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "pm.environment.set('rekam_id', res.data.id);",
+                                    "pm.test('Rekam medis dibuat', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/rekam-medis",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pasien_id\": {{pasien_id}},\n  \"keluhan_utama\": \"Pasien mengeluh demam 3 hari, batuk kering\",\n  \"pemeriksaan_fisik\": \"TD: 120/80, Nadi: 88x/mnt, Suhu: 38.5C, SpO2: 97%\",\n  \"tekanan_darah\": \"120/80\",\n  \"nadi\": 88,\n  \"suhu\": 38.5,\n  \"berat_badan\": 68.5,\n  \"tinggi_badan\": 170.0,\n  \"saturasi_oksigen\": 97\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Detail Rekam Medis",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/rekam-medis/{{rekam_id}}"
+                    }
+                },
+                {
+                    "name": "AI Assist Diagnosa",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/rekam-medis/{{rekam_id}}/ai-assist",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"context\": \"Minta saran diagnosis dan rencana tatalaksana\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Dokter Approve AI Output",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/rekam-medis/{{rekam_id}}/approve",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"diagnosis\": \"ISPA ringan\", \"tindakan_rencana\": \"Istirahat, minum air putih, antipiretik\", \"icd10_code\": \"J06.9\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Antrian",
+            "item": [
+                {
+                    "name": "List Antrian Hari Ini",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/antrian?tanggal=today&poli=Umum",
+                            "query": [
+                                {
+                                    "key": "tanggal",
+                                    "value": "today"
+                                },
+                                {
+                                    "key": "poli",
+                                    "value": "Umum"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Daftar Antrian",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json(); pm.environment.set('antrian_id', res.data.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/antrian",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pasien_id\": {{pasien_id}},\n  \"poli\": \"Umum\",\n  \"catatan\": \"Pasien demam\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Panggil Pasien",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/antrian/{{antrian_id}}/panggil"
+                    }
+                },
+                {
+                    "name": "Antrian Berikutnya",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/antrian/next/Umum"
+                    }
+                },
+                {
+                    "name": "Update Status Antrian",
+                    "request": {
+                        "method": "PUT",
+                        "url": "{{base_url}}/antrian/{{antrian_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"status\": \"selesai\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Resep & Farmasi",
+            "item": [
+                {
+                    "name": "Buat Resep",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json(); pm.environment.set('resep_id', res.data.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/resep",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rekam_medis_id\": {{rekam_id}},\n  \"pasien_id\": {{pasien_id}},\n  \"catatan_dokter\": \"Minum setelah makan\",\n  \"items\": [\n    {\n      \"obat_id\": 1,\n      \"nama_obat\": \"Paracetamol 500mg\",\n      \"dosis\": \"500mg\",\n      \"frekuensi\": \"3x sehari\",\n      \"jumlah\": 15,\n      \"satuan\": \"tablet\",\n      \"aturan_pakai\": \"Minum sesudah makan\"\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "List Resep Pending",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/resep?status=menunggu",
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "menunggu"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Apoteker: Siapkan Resep",
+                    "request": {
+                        "method": "PUT",
+                        "url": "{{base_url}}/resep/{{resep_id}}/siapkan"
+                    }
+                },
+                {
+                    "name": "Apoteker: Serahkan Obat",
+                    "request": {
+                        "method": "PUT",
+                        "url": "{{base_url}}/resep/{{resep_id}}/serahkan"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Stok Obat",
+            "item": [
+                {
+                    "name": "List Stok Obat",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/stok-obat?page=1&limit=20",
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Stok Hampir Habis",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/stok-obat?low_stock=true",
+                            "query": [
+                                {
+                                    "key": "low_stock",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Tambah Obat Baru",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/stok-obat",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"kode_obat\": \"PCT-500\",\n  \"nama_generik\": \"Paracetamol\",\n  \"nama_dagang\": \"Panadol\",\n  \"kategori\": \"Analgesik\",\n  \"satuan\": \"tablet\",\n  \"stok_tersedia\": 500,\n  \"stok_minimum\": 50,\n  \"harga_beli\": 500,\n  \"harga_jual\": 1000\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Restock Obat",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/stok-obat/1/tambah",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"jumlah\": 200, \"keterangan\": \"Restock bulanan\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Pembayaran",
+            "item": [
+                {
+                    "name": "Buat Transaksi",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/pembayaran",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pasien_id\": {{pasien_id}},\n  \"rekam_medis_id\": {{rekam_id}},\n  \"resep_id\": {{resep_id}},\n  \"jenis_pembayaran\": \"BPJS\",\n  \"total_biaya\": 0,\n  \"bpjs_claim_id\": \"CLAIM-2024-001\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Proses Pembayaran",
+                    "request": {
+                        "method": "PUT",
+                        "url": "{{base_url}}/pembayaran/1/proses",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"total_dibayar\": 0, \"keterangan\": \"Ditanggung BPJS penuh\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Laporan",
+            "item": [
+                {
+                    "name": "Laporan Kunjungan",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/laporan/kunjungan"
+                    }
+                }
+            ]
+        }
+    ]
+}
