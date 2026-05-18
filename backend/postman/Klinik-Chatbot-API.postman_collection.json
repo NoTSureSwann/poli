@@ -1,0 +1,280 @@
+{
+  "info": {
+    "_postman_id": "klinik-merah-putih-chatbot-dns-v2",
+    "name": "Klinik Merah Putih - Chatbot + DNS",
+    "description": "Collection untuk pengujian endpoint chatbot (Ollama/vLLM) dan DNS troubleshooting.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "API Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "API Health Alias",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "DNS",
+      "item": [
+        {
+          "name": "Resolve Host",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dns/resolve?host={{dns_host}}",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "dns",
+                "resolve"
+              ],
+              "query": [
+                {
+                  "key": "host",
+                  "value": "{{dns_host}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Check Endpoint Reachability",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dns/check?url={{target_url}}",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "dns",
+                "check"
+              ],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "{{target_url}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Local DNS/Network Info",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dns/info",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "dns",
+                "info"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chatbot",
+      "item": [
+        {
+          "name": "Get Service Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/status",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "chatbot",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Available Models",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/models",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "chatbot",
+                "models"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{user_id}},\n  \"message\": \"Saya mengalami sakit kepala sejak kemarin, apa yang harus dilakukan?\",\n  \"sessionId\": \"{{session_id}}\",\n  \"model\": \"{{chatbot_model}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/send",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "chatbot",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Chat History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/history/{{user_id}}?sessionId={{session_id}}",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "chatbot",
+                "history",
+                "{{user_id}}"
+              ],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{session_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Clear Chat History",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/clear/{{user_id}}?sessionId={{session_id}}",
+              "host": [
+                "{{base_host}}"
+              ],
+              "port": "{{base_port}}",
+              "path": [
+                "api",
+                "chatbot",
+                "clear",
+                "{{user_id}}"
+              ],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{session_id}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_host",
+      "value": "localhost",
+      "type": "string"
+    },
+    {
+      "key": "base_port",
+      "value": "3000",
+      "type": "string"
+    },
+    {
+      "key": "base_url",
+      "value": "http://{{base_host}}:{{base_port}}",
+      "type": "string"
+    },
+    {
+      "key": "dns_host",
+      "value": "api.vllm.cloud",
+      "type": "string"
+    },
+    {
+      "key": "target_url",
+      "value": "http://localhost:3000/health",
+      "type": "string"
+    },
+    {
+      "key": "chatbot_model",
+      "value": "mistral",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "session-klinik-001",
+      "type": "string"
+    }
+  ]
+}

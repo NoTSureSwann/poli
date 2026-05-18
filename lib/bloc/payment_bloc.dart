@@ -19,6 +19,8 @@ class SubmitPayment extends PaymentEvent {
   final double amount;
   final PaymentType paymentType;
   final String? description;
+  final String? rekeningDebit;
+  final String? qrisCode;
 
   SubmitPayment({
     required this.pasienId,
@@ -26,6 +28,8 @@ class SubmitPayment extends PaymentEvent {
     required this.amount,
     required this.paymentType,
     this.description,
+    this.rekeningDebit,
+    this.qrisCode,
   });
 }
 
@@ -164,6 +168,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         amount: event.amount,
         paymentType: event.paymentType,
         description: event.description,
+        rekeningDebit: event.rekeningDebit,
+        qrisCode: event.qrisCode,
       );
       emit(PaymentSubmitted(payment));
     } catch (e) {

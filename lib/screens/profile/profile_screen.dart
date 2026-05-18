@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../core/constants/api_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../services/auth_service.dart';
 import 'regulation_detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -19,6 +23,13 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late bool _isDarkMode;
+
+  Future<void> _openExternalLink(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   void initState() {
@@ -40,9 +51,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Keluar'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<AuthService>().logout();
+    }
+  }
+
+  Future<void> _exportMLData() async {
+    final auth = context.read<AuthService>();
+    final token = await auth.getAccessToken();
+    final url = Uri.parse('${ApiConstants.baseUrl}/ml/export?token=$token');
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal mengekspor data: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -76,18 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 const Text(
                   'Admin Klinik',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Klinik Merah Putih',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: 16),
                 const SizedBox(height: 8),
@@ -95,7 +144,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
 
           // Compliance & Regulations
           _SectionCard(
@@ -175,8 +223,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle: const Text('Tampilkan ulang terms & conditions'),
                 onTap: _resetTerms,
               ),
+              ListTile(
+                leading: const Icon(
+                  Icons.description_outlined,
+                  color: AppTheme.primary,
+                ),
+                title: const Text('Terms of Agreement'),
+                subtitle: const Text('Buka syarat dan ketentuan terbaru'),
+                trailing: const Icon(Icons.open_in_new),
+                onTap: () =>
+                    _openExternalLink('https://klinik-merah-putih.com/terms'),
+              ),
             ],
           ),
+          const SizedBox(height: 16),
+
+          // ML Tools
+          _SectionCard(
+            title: 'Manajemen Data & ML',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.analytics, color: AppTheme.primary),
+                title: const Text('Ekspor Dataset (CSV)'),
+                subtitle: const Text(
+                  'Unduh data klinis untuk Machine Learning',
+                ),
+                trailing: const Icon(Icons.download),
+                onTap: _exportMLData,
+              ),
+              ListTile(
+                leading: const Icon(Icons.storage, color: AppTheme.primary),
+                title: const Text('Database SQL'),
+                subtitle: const Text('Data tersimpan di SQLite lokal'),
+                onTap: () {},
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Logout
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text(
+                'Keluar Akun',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap: _handleLogout,
+            ),
+          ),
+          const SizedBox(height: 16),
           const SizedBox(height: 16),
 
           // App info
@@ -192,8 +294,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.health_and_safety,
-                    size: 32, color: AppTheme.primary),
+                const Icon(
+                  Icons.health_and_safety,
+                  size: 32,
+                  color: AppTheme.primary,
+                ),
                 const SizedBox(height: 8),
                 const Text(
                   'Klinik Merah Putih',
@@ -202,18 +307,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'v1.0.0 • Sistem Manajemen Klinik',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Kesehatan Anda, Prioritas Kami',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade400,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
                 ),
               ],
             ),
@@ -229,10 +328,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -251,13 +347,12 @@ class _SectionCard extends StatelessWidget {
           ),
         ),
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Column(
-            children: children,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+          child: Column(children: children),
         ),
       ],
     );
   }
 }
-

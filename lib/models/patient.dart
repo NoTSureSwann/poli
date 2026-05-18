@@ -1,53 +1,65 @@
 class Patient {
   final String id;
+  final String? noRM;
   final String nama;
   final String nik;
   final DateTime tanggalLahir;
   final String alamat;
-  final String jenisKelamin;
-  final String? noBPJS;
-  final String? phoneNumber;
+  final String jenisKelamin; // Backend uses 'L' or 'P'
+  final String? bpjsId;
+  final String? noTelepon;
   final DateTime createdAt;
 
   Patient({
     required this.id,
+    this.noRM,
     required this.nama,
     required this.nik,
     required this.tanggalLahir,
     required this.alamat,
     required this.jenisKelamin,
-    this.noBPJS,
-    this.phoneNumber,
+    String? bpjsId,
+    String? noTelepon,
+    String? noBPJS,
+    String? phoneNumber,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  }) : bpjsId = bpjsId ?? noBPJS,
+       noTelepon = noTelepon ?? phoneNumber,
+       createdAt = createdAt ?? DateTime.now();
 
   factory Patient.fromJson(Map<String, dynamic> json) {
     return Patient(
-      id: json['id'] as String,
-      nama: json['nama'] as String,
-      nik: json['nik'] as String,
-      tanggalLahir: DateTime.parse(json['tanggal_lahir'] as String),
-      alamat: json['alamat'] as String,
-      jenisKelamin: json['jenis_kelamin'] as String,
-      noBPJS: json['no_bpjs'] as String?,
-      phoneNumber: json['phone_number'] as String?,
+      id: (json['id'] ?? '').toString(),
+      noRM: (json['no_rm'] ?? '').toString().isEmpty
+          ? null
+          : json['no_rm'].toString(),
+      nama: (json['nama'] ?? '').toString(),
+      nik: (json['nik'] ?? '').toString(),
+      tanggalLahir:
+          DateTime.tryParse((json['tanggal_lahir'] ?? '').toString()) ??
+          DateTime.now(),
+      alamat: (json['alamat'] ?? '').toString(),
+      jenisKelamin: (json['jenis_kelamin'] ?? 'L').toString(),
+      bpjsId: json['bpjs_id']?.toString(),
+      noTelepon: json['no_telepon']?.toString(),
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      if (id.isNotEmpty) 'id': id,
+      if (noRM != null && noRM!.isNotEmpty) 'no_rm': noRM,
       'nama': nama,
       'nik': nik,
-      'tanggal_lahir': tanggalLahir.toIso8601String(),
+      'tanggal_lahir':
+          '${tanggalLahir.year.toString().padLeft(4, '0')}-${tanggalLahir.month.toString().padLeft(2, '0')}-${tanggalLahir.day.toString().padLeft(2, '0')}',
       'alamat': alamat,
       'jenis_kelamin': jenisKelamin,
-      'no_bpjs': noBPJS,
-      'phone_number': phoneNumber,
-      'created_at': createdAt.toIso8601String(),
+      'bpjs_id': bpjsId,
+      'no_telepon': noTelepon,
     };
   }
 
@@ -61,5 +73,12 @@ class Patient {
     return '$years tahun';
   }
 
-  bool get hasBPJS => noBPJS != null && noBPJS!.isNotEmpty;
+  String get genderLabel =>
+      jenisKelamin.toUpperCase() == 'L' ? 'Laki-laki' : 'Perempuan';
+
+  // Backward-compatible getters for existing UI code
+  String? get noBPJS => bpjsId;
+  String? get phoneNumber => noTelepon;
+
+  bool get hasBPJS => bpjsId != null && bpjsId!.isNotEmpty;
 }

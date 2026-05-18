@@ -22,7 +22,7 @@ class StatusBadge extends StatelessWidget {
     switch (type) {
       case PaymentType.debit:
         return const StatusBadge(
-          label: 'DEBIT',
+          label: 'sistem Debit',
           backgroundColor: AppTheme.info,
           icon: Icons.credit_card,
         );

@@ -16,12 +16,7 @@ class PatientDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Pasien'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {},
-          ),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.edit), onPressed: () {})],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -41,9 +36,7 @@ class PatientDetailScreen extends StatelessWidget {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppTheme.primary.withAlpha(50),
-                ),
+                border: Border.all(color: AppTheme.primary.withAlpha(50)),
               ),
               child: Column(
                 children: [
@@ -73,10 +66,7 @@ class PatientDetailScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'ID: ${patient.id}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -87,17 +77,16 @@ class PatientDetailScreen extends StatelessWidget {
                         backgroundColor: patient.hasBPJS
                             ? AppTheme.success
                             : AppTheme.info,
-                        icon: patient.hasBPJS
-                            ? Icons.verified
-                            : Icons.person,
+                        icon: patient.hasBPJS ? Icons.verified : Icons.person,
                       ),
                       const SizedBox(width: 8),
                       StatusBadge(
-                        label: patient.jenisKelamin,
-                        backgroundColor: patient.jenisKelamin == 'Laki-laki'
+                        label: patient.genderLabel,
+                        backgroundColor:
+                            patient.jenisKelamin.toUpperCase() == 'L'
                             ? AppTheme.info
                             : AppTheme.accent,
-                        icon: patient.jenisKelamin == 'Laki-laki'
+                        icon: patient.jenisKelamin.toUpperCase() == 'L'
                             ? Icons.male
                             : Icons.female,
                       ),
@@ -112,15 +101,12 @@ class PatientDetailScreen extends StatelessWidget {
             _InfoSection(
               title: 'Informasi Pribadi',
               items: [
-                _InfoRow(
-                  icon: Icons.badge,
-                  label: 'NIK',
-                  value: patient.nik,
-                ),
+                _InfoRow(icon: Icons.badge, label: 'NIK', value: patient.nik),
                 _InfoRow(
                   icon: Icons.cake,
                   label: 'Tanggal Lahir',
-                  value: '${dateFormat.format(patient.tanggalLahir)} (${patient.age})',
+                  value:
+                      '${dateFormat.format(patient.tanggalLahir)} (${patient.age})',
                 ),
                 _InfoRow(
                   icon: Icons.location_on,
@@ -191,25 +177,22 @@ class _InfoSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withAlpha(40),
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor.withAlpha(40)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 12),
-          ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: item,
-              )),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: item,
+            ),
+          ),
         ],
       ),
     );

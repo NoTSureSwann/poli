@@ -3,11 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/patient_bloc.dart';
 import '../bloc/payment_bloc.dart';
 import '../bloc/medical_record_bloc.dart';
+import '../services/auth_service.dart';
 import 'dashboard/dashboard_screen.dart';
+import 'chatbot_screen.dart';
 import 'patients/patient_list_screen.dart';
+import 'dokter/dokter_list_screen.dart';
+import 'tarif/tarif_screen.dart';
+import 'patients/patient_form_screen.dart';
 import 'payments/payment_list_screen.dart';
 import 'payments/payment_form_screen.dart';
 import 'records/medical_record_list_screen.dart';
+import 'records/medical_record_form_screen.dart';
 import 'profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -36,6 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Default user ID for chatbot - actual ID is loaded asynchronously
+    const currentUserId = 1;
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => PatientBloc()),
@@ -59,10 +68,32 @@ class _HomeScreenState extends State<HomeScreen> {
         body: IndexedStack(
           index: _selectedIndex,
           children: [
-            const DashboardScreen(),
+            DashboardScreen(
+              onNavigate: (index) => setState(() => _selectedIndex = index),
+              onAction: (action) {
+                switch (action) {
+                  case 'add_patient':
+                    _openPatientForm();
+                    break;
+                  case 'add_payment':
+                    _openPaymentForm();
+                    break;
+                  case 'add_record':
+                    _openRecordForm();
+                    break;
+                  case 'view_dokter':
+                    _openDokterList();
+                    break;
+                  case 'view_tarif':
+                    _openTarif();
+                    break;
+                }
+              },
+            ),
             const PatientListScreen(),
             const MedicalRecordListScreen(),
             const PaymentListScreen(),
+            ChatbotScreen(userId: currentUserId),
             ProfileScreen(
               isDarkMode: _isDarkMode,
               onToggleTheme: (val) {
@@ -98,30 +129,97 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Pembayaran',
             ),
             NavigationDestination(
+              icon: Icon(Icons.smart_toy_outlined),
+              selectedIcon: Icon(Icons.smart_toy),
+              label: 'AI Chat',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.person_outlined),
               selectedIcon: Icon(Icons.person),
               label: 'Profil',
             ),
           ],
         ),
-        floatingActionButton: _selectedIndex == 3
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (_) => PaymentBloc(),
-                        child: const PaymentFormScreen(),
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Pembayaran Baru'),
-              )
-            : null,
+        floatingActionButton: _buildFab(),
       ),
+    );
+  }
+
+  Widget? _buildFab() {
+    if (_selectedIndex == 1) {
+      return FloatingActionButton.extended(
+        onPressed: () => _openPatientForm(),
+        icon: const Icon(Icons.person_add),
+        label: const Text('Pasien Baru'),
+      );
+    }
+
+    if (_selectedIndex == 2) {
+      return FloatingActionButton.extended(
+        onPressed: () => _openRecordForm(),
+        icon: const Icon(Icons.add_moderator),
+        label: const Text('Rekam Medis'),
+      );
+    }
+
+    if (_selectedIndex == 3) {
+      return FloatingActionButton.extended(
+        onPressed: () => _openPaymentForm(),
+        icon: const Icon(Icons.add),
+        label: const Text('Pembayaran Baru'),
+      );
+    }
+
+    return null;
+  }
+
+  void _openPatientForm() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => PatientBloc(),
+          child: const PatientFormScreen(),
+        ),
+      ),
+    );
+  }
+
+  void _openPaymentForm() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => PaymentBloc(),
+          child: const PaymentFormScreen(),
+        ),
+      ),
+    );
+  }
+
+  void _openRecordForm() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => MedicalRecordBloc(),
+          child: const MedicalRecordFormScreen(),
+        ),
+      ),
+    );
+  }
+
+  void _openDokterList() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DokterListScreen()),
+    );
+  }
+
+  void _openTarif() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TarifScreen()),
     );
   }
 }

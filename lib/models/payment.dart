@@ -36,6 +36,8 @@ class PaymentModel {
   final String processedBy;
   final DateTime timestamp;
   final String? description;
+  final String? rekeningDebit;
+  final String? qrisCode;
 
   PaymentModel({
     required this.id,
@@ -46,6 +48,8 @@ class PaymentModel {
     required this.processedBy,
     required this.timestamp,
     this.description,
+    this.rekeningDebit,
+    this.qrisCode,
   });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
@@ -60,6 +64,8 @@ class PaymentModel {
           ? DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int)
           : DateTime.parse(json['timestamp'] as String),
       description: json['description'] as String?,
+      rekeningDebit: json['rekening_debit'] as String?,
+      qrisCode: json['qris_code'] as String?,
     );
   }
 
@@ -73,6 +79,8 @@ class PaymentModel {
       'processed_by': processedBy,
       'timestamp': timestamp.toIso8601String(),
       'description': description,
+      'rekening_debit': rekeningDebit,
+      'qris_code': qrisCode,
     };
   }
 

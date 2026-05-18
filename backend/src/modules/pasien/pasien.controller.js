@@ -1,30 +1,32 @@
-const db = require('../../config/database');
+const { query } = require('../../config/database');
 const { success, error, paginated } = require('../../utils/response');
 
 const getAllPasien = async (req, res) => {
   const { page = 1, limit = 10, search = '' } = req.query;
-  const offset = (page - 1) * limit;
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+  const limitNum = Math.max(parseInt(limit, 10) || 10, 1);
+  const offset = (pageNum - 1) * limitNum;
 
   try {
     const queryStr = `
-      SELECT * FROM pasien 
-      WHERE nama ILIKE $1 OR no_rm ILIKE $1 OR nik ILIKE $1 
-      ORDER BY created_at DESC 
-      LIMIT $2 OFFSET $3
+      SELECT * FROM pasien
+      WHERE nama LIKE ? OR no_rm LIKE ? OR nik LIKE ?
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
     `;
     const countStr = `
-      SELECT COUNT(*) FROM pasien 
-      WHERE nama ILIKE $1 OR no_rm ILIKE $1 OR nik ILIKE $1
+      SELECT COUNT(*) as total FROM pasien
+      WHERE nama LIKE ? OR no_rm LIKE ? OR nik LIKE ?
     `;
 
     const searchQuery = `%${search}%`;
     const [result, countResult] = await Promise.all([
-      db.query(queryStr, [searchQuery, limit, offset]),
-      db.query(countStr, [searchQuery])
+      query(queryStr, [searchQuery, searchQuery, searchQuery, limitNum, offset]),
+      query(countStr, [searchQuery, searchQuery, searchQuery])
     ]);
 
-    const total = parseInt(countResult.rows[0].count);
-    return paginated(res, result.rows, total, page, limit);
+    const total = parseInt(countResult.rows[0].total || 0);
+    return paginated(res, result.rows, total, pageNum, limitNum);
   } catch (err) {
     console.error(err);
     return error(res, 'Gagal mengambil data pasien', 500, err.message);
@@ -34,7 +36,7 @@ const getAllPasien = async (req, res) => {
 const getPasienById = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.query('SELECT * FROM pasien WHERE id = $1', [id]);
+    const result = await query('SELECT * FROM pasien WHERE id = ?', [id]);
     if (result.rows.length === 0) {
       return error(res, 'Pasien tidak ditemukan', 404);
     }
@@ -46,16 +48,18 @@ const getPasienById = async (req, res) => {
 };
 
 const createPasien = async (req, res) => {
-  const { no_rm, nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon } = req.body;
-  
+  const { no_rm, nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, email, nama_wali, no_telepon_wali, alergi, riwayat_penyakit, foto_url, wallet_address } = req.body;
+  const generatedNoRm = no_rm || `RM${Date.now()}`;
+
   try {
-    const result = await db.query(
-      `INSERT INTO pasien (no_rm, nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, created_by) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-       RETURNING *`,
-      [no_rm, nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, req.user.id]
+    const result = await query(
+      `INSERT INTO pasien (no_rm, nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, email, nama_wali, no_telepon_wali, alergi, riwayat_penyakit, foto_url, wallet_address, is_active, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      [generatedNoRm, nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, email, nama_wali, no_telepon_wali, alergi, riwayat_penyakit, foto_url, wallet_address, 1, req.user?.id || null]
     );
-    return success(res, result.rows[0], 'Pasien berhasil ditambahkan', 201);
+
+    const createdResult = await query('SELECT * FROM pasien WHERE id = ?', [result.lastID]);
+    return success(res, createdResult.rows[0], 'Pasien berhasil ditambahkan', 201);
   } catch (err) {
     console.error(err);
     return error(res, 'Gagal menambahkan pasien', 500, err.message);
@@ -64,20 +68,22 @@ const createPasien = async (req, res) => {
 
 const updatePasien = async (req, res) => {
   const { id } = req.params;
-  const { nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon } = req.body;
+  const { nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, email, nama_wali, no_telepon_wali, alergi, riwayat_penyakit, foto_url, wallet_address, is_active } = req.body;
 
   try {
-    const result = await db.query(
-      `UPDATE pasien 
-       SET nama = $1, nik = $2, bpjs_id = $3, tanggal_lahir = $4, jenis_kelamin = $5, alamat = $6, no_telepon = $7, updated_at = NOW() 
-       WHERE id = $8 RETURNING *`,
-      [nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, id]
+    const result = await query(
+      `UPDATE pasien
+       SET nama = ?, nik = ?, bpjs_id = ?, tanggal_lahir = ?, jenis_kelamin = ?, alamat = ?, no_telepon = ?, email = ?, nama_wali = ?, no_telepon_wali = ?, alergi = ?, riwayat_penyakit = ?, foto_url = ?, wallet_address = ?, is_active = ?, updated_at = datetime('now')
+       WHERE id = ?`,
+      [nama, nik, bpjs_id, tanggal_lahir, jenis_kelamin, alamat, no_telepon, email, nama_wali, no_telepon_wali, alergi, riwayat_penyakit, foto_url, wallet_address, is_active || 1, id]
     );
 
-    if (result.rows.length === 0) {
+    if (result.rowCount === 0) {
       return error(res, 'Pasien tidak ditemukan', 404);
     }
-    return success(res, result.rows[0], 'Data pasien berhasil diperbarui');
+
+    const updatedResult = await query('SELECT * FROM pasien WHERE id = ?', [id]);
+    return success(res, updatedResult.rows[0], 'Data pasien berhasil diperbarui');
   } catch (err) {
     console.error(err);
     return error(res, 'Gagal memperbarui pasien', 500, err.message);

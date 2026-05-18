@@ -2,12 +2,17 @@ const { verifyToken } = require('../utils/auth');
 const { error } = require('../utils/response');
 
 const authenticate = (req, res, next) => {
+  let token = req.query.token;
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  }
+
+  if (!token) {
     return error(res, 'Akses ditolak. Token tidak ditemukan.', 401);
   }
 
-  const token = authHeader.split(' ')[1];
   const decoded = verifyToken(token);
 
   if (!decoded) {

@@ -1,122 +1,138 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'core/constants/api_constants.dart';
 import 'services/auth_service.dart';
 import 'theme/app_theme.dart';
-import 'screens/home_screen.dart';
-import 'screens/onboarding/terms_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://oofejhakgjaqprkzaext.supabase.co',
+    anonKey: 'sb_publishable_ewBgnDMNaHfnWiJ9nC0wNg_Y0IRLI-P',
   );
 
-  // Load .env config
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {
-    debugPrint('[Main] .env not found, using defaults');
+  // Configure API host based on platform
+  if (!kIsWeb) {
+    // Only use emulator IP on Android; desktop uses localhost by default.
+    if (Platform.isAndroid) {
+      ApiConstants.useAndroidEmulator();
+    }
   }
 
+  // Read persisted theme preference
   final prefs = await SharedPreferences.getInstance();
-  final isDarkMode = prefs.getBool('is_dark_mode') ?? false;
-  final termsAccepted = prefs.getBool('terms_accepted') ?? false;
+  final isDark = prefs.getBool('dark_mode') ?? false;
 
-  final authService = AuthService();
-  await authService.initialize();
-
-  runApp(
-    ChangeNotifierProvider<AuthService>.value(
-      value: authService,
-      child: MyApp(
-        initialDarkMode: isDarkMode,
-        termsAccepted: termsAccepted,
-      ),
-    ),
-  );
+  runApp(KlinikApp(initialDarkMode: isDark));
 }
 
-class MyApp extends StatefulWidget {
+class KlinikApp extends StatefulWidget {
   final bool initialDarkMode;
-  final bool termsAccepted;
 
-  const MyApp({
-    super.key,
-    required this.initialDarkMode,
-    required this.termsAccepted,
-  });
+  const KlinikApp({super.key, required this.initialDarkMode});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<KlinikApp> createState() => _KlinikAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  late ThemeMode _themeMode;
-  late bool _termsAccepted;
+class _KlinikAppState extends State<KlinikApp> {
+  late bool _isDarkMode;
+  bool _isLoggedIn = false;
+  bool _isCheckingAuth = true;
 
   @override
   void initState() {
     super.initState();
-    _themeMode = widget.initialDarkMode ? ThemeMode.dark : ThemeMode.light;
-    _termsAccepted = widget.termsAccepted;
+    _isDarkMode = widget.initialDarkMode;
+    _checkAuthStatus();
   }
 
-  Future<void> _acceptTerms() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('terms_accepted', true);
-    await prefs.setBool('privacy_accepted', true);
-    setState(() {
-      _termsAccepted = true;
-    });
+  Future<void> _checkAuthStatus() async {
+    final authService = AuthService();
+    final loggedIn = await authService.isLoggedIn();
+    if (mounted) {
+      setState(() {
+        _isLoggedIn = loggedIn;
+        _isCheckingAuth = false;
+      });
+    }
   }
 
-  void toggleTheme(bool isDark) async {
+  void _toggleTheme(bool dark) async {
+    setState(() => _isDarkMode = dark);
     final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('is_dark_mode', isDark);
-    setState(() {
-      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-    });
+    await prefs.setBool('dark_mode', dark);
+  }
+
+  void _onLoginSuccess() {
+    setState(() => _isLoggedIn = true);
+  }
+
+  void _onLogout() {
+    setState(() => _isLoggedIn = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Klinik Merah Putih',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: _themeMode,
-      home: _buildHome(context),
+    return MultiProvider(
+      providers: [
+        Provider<AuthService>(create: (_) => AuthService()),
+        Provider<VoidCallback>.value(value: _onLogout),
+      ],
+      child: MaterialApp(
+        title: 'Klinik Merah Putih',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        home: _isCheckingAuth
+            ? const _SplashScreen()
+            : _isLoggedIn
+                ? HomeScreen(
+                    initialDarkMode: _isDarkMode,
+                    onToggleTheme: _toggleTheme,
+                  )
+                : LoginScreen(onLoginSuccess: _onLoginSuccess),
+      ),
     );
   }
+}
 
-  Widget _buildHome(BuildContext context) {
-    if (!_termsAccepted) {
-      return TermsScreen(onTermsAccepted: _acceptTerms);
-    }
-    
-    return Consumer<AuthService>(
-      builder: (context, auth, _) {
-        if (!auth.isAuthenticated) {
-          return LoginScreen(
-            onLoginSuccess: () {
-              // The Consumer will rebuild and show HomeScreen automatically if authenticated
-            },
-          );
-        }
-        
-        return HomeScreen(
-          initialDarkMode: _themeMode == ThemeMode.dark,
-          onToggleTheme: toggleTheme,
-        );
-      },
+/// A brief splash shown while checking auth status.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.local_hospital,
+              size: 72,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Klinik Merah Putih',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
     );
   }
 }

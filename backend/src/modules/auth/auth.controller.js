@@ -1,4 +1,4 @@
-const db = require('../../config/database');
+const { query } = require('../../config/database');
 const { hashPassword, comparePassword, generateToken } = require('../../utils/auth');
 const { success, error } = require('../../utils/response');
 
@@ -6,18 +6,19 @@ const register = async (req, res) => {
   const { nama, email, password, role, nip } = req.body;
 
   try {
-    const existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
+    const existingResult = await query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existingResult.rows.length > 0) {
       return error(res, 'Email sudah terdaftar', 400);
     }
 
     const hashedPassword = await hashPassword(password);
-    const result = await db.query(
-      'INSERT INTO users (nama, email, password_hash, role, nip) VALUES ($1, $2, $3, $4, $5) RETURNING id, nama, email, role',
-      [nama, email, hashedPassword, role || 'perawat', nip]
+    const insertResult = await query(
+      'INSERT INTO users (nama, email, password_hash, role, nip, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))',
+      [nama, email, hashedPassword, role || 'perawat', nip, 1]
     );
 
-    const user = result.rows[0];
+    const userResult = await query('SELECT id, nama, email, role FROM users WHERE id = ?', [insertResult.lastID]);
+    const user = userResult.rows[0];
     const token = generateToken({ id: user.id, role: user.role });
 
     return success(res, { user, token }, 'Registrasi berhasil', 201);
@@ -31,7 +32,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await query('SELECT * FROM users WHERE email = ?', [email]);
     if (result.rows.length === 0) {
       return error(res, 'Email atau password salah', 401);
     }
@@ -43,9 +44,9 @@ const login = async (req, res) => {
     }
 
     const token = generateToken({ id: user.id, role: user.role });
-    
+
     // Update last login
-    await db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
+    await query('UPDATE users SET last_login = datetime(\'now\') WHERE id = ?', [user.id]);
 
     delete user.password_hash;
     delete user.refresh_token_hash;

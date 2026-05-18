@@ -1,70 +1,81 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+
+import '../core/network/dio_client.dart';
+import '../core/network/token_storage.dart';
 import '../models/user.dart';
 
-class AuthService extends ChangeNotifier {
-  User? _currentUser;
-  
-  User? get currentUser => _currentUser;
-  bool get isAuthenticated => _currentUser != null;
+class AuthService {
+  final Dio _dio = DioClient.instance.dio;
+  final TokenStorage _tokenStorage = TokenStorage();
 
-  Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('current_user');
-    if (userJson != null) {
-      try {
-        _currentUser = User.fromJson(jsonDecode(userJson));
-      } catch (e) {
-        debugPrint('Error parsing user data: $e');
-      }
-    }
-  }
-
-  Future<bool> login(String email, String password, UserRole role) async {
-    // Simulasi HTTP Login Request
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Hardcoded logic untuk saat ini, sesuai kebutuhan mockup
-    if (password == '123456') { // Mock authentication
-      _currentUser = User(
-        id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
-        name: role == UserRole.admin ? 'Administrator' : 'Pasien',
-        email: email,
-        role: role,
+  Future<User> login(String email, String password) async {
+    try {
+      final response = await _dio.post(
+        '/auth/login',
+        data: {
+          'email': email,
+          'password': password,
+        },
       );
-      await _saveUserSession();
-      notifyListeners();
-      return true;
+
+      final responseData = response.data;
+      final data = responseData['data'];
+      final user = User.fromJson(data['user']);
+      final token = data['token'] as String;
+
+      // Store tokens securely
+      await _tokenStorage.saveAccessToken(token);
+      await _tokenStorage.saveRefreshToken(token);
+
+      return user.copyWith(token: token);
+    } on DioException catch (e) {
+      throw Exception(e.error?.toString() ?? 'Login gagal');
     }
-    return false;
   }
 
-  Future<bool> register(String name, String email, String password, UserRole role) async {
-    // Simulasi pendaftaran HTTP request 
-    await Future.delayed(const Duration(seconds: 1));
-    
-    _currentUser = User(
-      id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      email: email,
-      role: role,
-    );
-    await _saveUserSession();
-    notifyListeners();
-    return true;
+  Future<User> register(String nama, String email, String password, UserRole role) async {
+    try {
+      await _dio.post(
+        '/auth/register',
+        data: {
+          'nama': nama,
+          'email': email,
+          'password': password,
+          'role': role.name,
+        },
+      );
+
+      // Backend register returns only { success: true },
+      // so auto-login to get the token and user data.
+      return await login(email, password);
+    } on DioException catch (e) {
+      throw Exception(e.error?.toString() ?? 'Registrasi gagal');
+    }
+  }
+
+  Future<User> getCurrentUser() async {
+    try {
+      final response = await _dio.get('/auth/me');
+      return User.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.error?.toString() ?? 'Gagal mendapatkan data user');
+    }
   }
 
   Future<void> logout() async {
-    _currentUser = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('current_user');
-    notifyListeners();
+    try {
+      await _tokenStorage.clearTokens();
+    } catch (e) {
+      // Continue with logout even if clearing tokens fails
+    }
   }
 
-  Future<void> _saveUserSession() async {
-    if (_currentUser == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('current_user', jsonEncode(_currentUser!.toJson()));
+  Future<bool> isLoggedIn() async {
+    final token = await _tokenStorage.readAccessToken();
+    return token != null && token.isNotEmpty;
+  }
+
+  Future<String?> getAccessToken() async {
+    return await _tokenStorage.readAccessToken();
   }
 }

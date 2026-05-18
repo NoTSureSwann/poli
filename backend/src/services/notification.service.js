@@ -1,24 +1,38 @@
-const TelegramBot = require('node-telegram-bot-api');
-const nodemailer = require('nodemailer');
+let TelegramBot;
+try {
+  TelegramBot = require('node-telegram-bot-api');
+} catch (e) {
+  console.warn('node-telegram-bot-api not found, Telegram notifications disabled');
+}
+
+let nodemailer;
+try {
+  nodemailer = require('nodemailer');
+} catch (e) {
+  console.warn('nodemailer not found, Email notifications disabled');
+}
+
 require('dotenv').config();
 
 class NotificationService {
   constructor() {
     // Telegram Setup
-    if (process.env.TELEGRAM_BOT_TOKEN) {
+    if (TelegramBot && process.env.TELEGRAM_BOT_TOKEN) {
       this.bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
     }
 
     // Email Setup
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_PORT == 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    if (nodemailer) {
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        secure: process.env.SMTP_PORT == 465,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    }
   }
 
   async sendPaymentNotification(paymentData) {
@@ -45,11 +59,11 @@ Klinik Merah Putih
     }
 
     // Send Email
-    if (process.env.SMTP_USER) {
+    if (this.transporter && process.env.SMTP_USER) {
       try {
         await this.transporter.sendMail({
           from: process.env.SMTP_FROM || 'noreply@klinikmerahputih.com',
-          to: process.env.SMTP_USER, // Sending to admin for now as requested
+          to: process.env.SMTP_USER,
           subject: `Notifikasi Pembayaran: ${patientName}`,
           text: message.replace(/\*/g, ''),
           html: `<pre>${message.replace(/\*/g, '')}</pre>`,

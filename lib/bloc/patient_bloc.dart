@@ -15,6 +15,11 @@ class SearchPatients extends PatientEvent {
   SearchPatients(this.query);
 }
 
+class CreatePatient extends PatientEvent {
+  final Patient patient;
+  CreatePatient(this.patient);
+}
+
 class ClearSearch extends PatientEvent {}
 
 // ─── States ──────────────────────────────────────────────────────
@@ -24,6 +29,13 @@ abstract class PatientState {}
 class PatientInitial extends PatientState {}
 
 class PatientLoading extends PatientState {}
+
+class PatientSubmitting extends PatientState {}
+
+class PatientSubmitted extends PatientState {
+  final Patient patient;
+  PatientSubmitted(this.patient);
+}
 
 class PatientLoaded extends PatientState {
   final List<Patient> patients;
@@ -86,7 +98,21 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
     on<LoadPatients>(_onLoadPatients);
     on<LoadMorePatients>(_onLoadMorePatients);
     on<SearchPatients>(_onSearchPatients);
+    on<CreatePatient>(_onCreatePatient);
     on<ClearSearch>(_onClearSearch);
+  }
+
+  Future<void> _onCreatePatient(
+    CreatePatient event,
+    Emitter<PatientState> emit,
+  ) async {
+    emit(PatientSubmitting());
+    try {
+      final patient = await _patientService.createPatient(event.patient);
+      emit(PatientSubmitted(patient));
+    } catch (e) {
+      emit(PatientError('Gagal menambah pasien: $e'));
+    }
   }
 
   Future<void> _onLoadPatients(

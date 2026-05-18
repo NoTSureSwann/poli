@@ -67,3 +67,20 @@ yarn-error.log*
 passwords.txt
 secrets.json
 
+# Java crash dumps & replay logs
+hs_err_pid*.log
+replay_pid*.log
+
+# SQLite database files (should live in backend only)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Misc generated / temp files
+query
+.sixth/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.txt.log
+devtools_options.yaml
+

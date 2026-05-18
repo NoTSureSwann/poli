@@ -57,6 +57,8 @@ class PaymentService {
     required double amount,
     required PaymentType paymentType,
     String? description,
+    String? rekeningDebit,
+    String? qrisCode,
   }) async {
     final payment = PaymentModel(
       id: 'PAY${DateTime.now().millisecondsSinceEpoch}',
@@ -67,6 +69,8 @@ class PaymentService {
       processedBy: 'Admin Klinik',
       timestamp: DateTime.now(),
       description: description,
+      rekeningDebit: rekeningDebit,
+      qrisCode: qrisCode,
     );
 
     _mockPayments.insert(0, payment);

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../models/user.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import 'register_screen.dart';
 
@@ -19,9 +21,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtrl = TextEditingController();
   UserRole _selectedRole = UserRole.pasien;
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
-  void _handleLogin() async {
-    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
+  Future<void> _launchLegalUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _handleLogin() async {
+    if (_emailCtrl.text.trim().isEmpty || _passCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Email dan kata sandi wajib diisi')),
       );
@@ -31,21 +41,39 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     final auth = context.read<AuthService>();
-    final success = await auth.login(
-      _emailCtrl.text,
-      _passCtrl.text,
-      _selectedRole,
-    );
+    try {
+      await auth.login(
+        _emailCtrl.text.trim(),
+        _passCtrl.text,
+      );
 
-    setState(() => _isLoading = false);
+      if (!mounted) {
+        return;
+      }
 
-    if (success) {
+      setState(() => _isLoading = false);
       widget.onLoginSuccess();
-    } else {
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login gagal. Coba kata sandi: 123456')),
+        const SnackBar(
+          content: Text(
+            'Login gagal. Periksa kembali email dan password Anda.',
+          ),
+        ),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -54,133 +82,153 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.local_hospital, size: 80, color: AppTheme.primary),
-                const SizedBox(height: 16),
-                const Text(
-                  'Klinik Merah Putih',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Silakan masuk akun Anda',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _RoleButton(
-                      label: 'Pasien',
-                      icon: Icons.person,
-                      isSelected: _selectedRole == UserRole.pasien,
-                      onTap: () => setState(() => _selectedRole = UserRole.pasien),
-                    ),
-                    const SizedBox(width: 16),
-                    _RoleButton(
-                      label: 'Admin',
-                      icon: Icons.admin_panel_settings,
-                      isSelected: _selectedRole == UserRole.admin,
-                      onTap: () => setState(() => _selectedRole = UserRole.admin),
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 8),
+                      color: Colors.black.withAlpha(16),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: _emailCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(
+                      Icons.local_hospital,
+                      size: 68,
+                      color: AppTheme.primary,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Klinik Merah Putih',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Masuk untuk melanjutkan manajemen pasien.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 22),
+                    SegmentedButton<UserRole>(
+                      segments: const [
+                        ButtonSegment<UserRole>(
+                          value: UserRole.pasien,
+                          label: Text('Pasien'),
+                          icon: Icon(Icons.person_outline),
+                        ),
+                        ButtonSegment<UserRole>(
+                          value: UserRole.admin,
+                          label: Text('Admin'),
+                          icon: Icon(Icons.admin_panel_settings_outlined),
+                        ),
+                      ],
+                      selected: {_selectedRole},
+                      onSelectionChanged: (value) {
+                        setState(() => _selectedRole = value.first);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _passCtrl,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          onPressed: () {
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
+                          },
+                        ),
+                      ),
+                      onFieldSubmitted: (_) => _handleLogin(),
+                    ),
+                    const SizedBox(height: 18),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Masuk'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RegisterScreen(
+                              onRegisterSuccess: widget.onLoginSuccess,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Belum punya akun? Daftar sekarang'),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'Dengan masuk, Anda setuju pada ',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        TextButton(
+                          onPressed: () => _launchLegalUrl(
+                            'https://klinik-merah-putih.com/terms',
+                          ),
+                          child: const Text('Terms of Agreement'),
+                        ),
+                        Text(
+                          ' dan ',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        TextButton(
+                          onPressed: () => _launchLegalUrl(
+                            'https://klinik-merah-putih.com/privacy',
+                          ),
+                          child: const Text('Kebijakan Privasi'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passCtrl,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Login', style: TextStyle(fontSize: 16)),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (_) => RegisterScreen(onRegisterSuccess: widget.onLoginSuccess))
-                    );
-                  },
-                  child: const Text('Belum punya akun? Daftar sekarang'),
-                )
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _RoleButton({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary.withAlpha(40) : Colors.transparent,
-          border: Border.all(
-            color: isSelected ? AppTheme.primary : Colors.grey.shade300,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: isSelected ? AppTheme.primary : Colors.grey),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? AppTheme.primary : Colors.grey,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

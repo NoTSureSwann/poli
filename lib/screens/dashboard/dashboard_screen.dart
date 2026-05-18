@@ -6,7 +6,9 @@ import '../../widgets/stat_card.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final Function(int)? onNavigate;
+  final Function(String)? onAction;
+  const DashboardScreen({super.key, this.onNavigate, this.onAction});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -89,7 +91,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -133,14 +134,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     StatCard(
                       title: 'Debit',
-                      value: _formatCurrency(_paymentSummary['total_debit'] ?? 0),
+                      value: _formatCurrency(
+                        _paymentSummary['total_debit'] ?? 0,
+                      ),
                       icon: Icons.credit_card,
                       color: AppTheme.info,
                       subtitle: 'Bank Transfer/Debit',
                     ),
                     StatCard(
                       title: 'QRIS/Tunai',
-                      value: _formatCurrency((_paymentSummary['total_qris'] ?? 0) + (_paymentSummary['total_cash'] ?? 0)),
+                      value: _formatCurrency(
+                        (_paymentSummary['total_qris'] ?? 0) +
+                            (_paymentSummary['total_cash'] ?? 0),
+                      ),
                       icon: Icons.payments,
                       color: AppTheme.warning,
                       subtitle: 'QRIS & Cash',
@@ -152,10 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
 
             // Quick Actions
-            Text(
-              'Aksi Cepat',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Aksi Cepat', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             SizedBox(
               height: 100,
@@ -166,25 +169,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.person_add,
                     label: 'Pasien Baru',
                     color: AppTheme.primary,
-                    onTap: () {},
+                    onTap: () => widget.onAction?.call('add_patient'),
                   ),
                   _QuickAction(
                     icon: Icons.payment,
                     label: 'Pembayaran',
                     color: AppTheme.success,
-                    onTap: () {},
+                    onTap: () => widget.onAction?.call('add_payment'),
                   ),
                   _QuickAction(
                     icon: Icons.medical_services,
                     label: 'Rekam Medis',
                     color: AppTheme.accent,
-                    onTap: () {},
+                    onTap: () => widget.onAction?.call('add_record'),
+                  ),
+                  _QuickAction(
+                    icon: Icons.medical_services,
+                    label: 'Dokter & Harga',
+                    color: AppTheme.primary,
+                    onTap: () => widget.onAction?.call('view_dokter'),
+                  ),
+                  _QuickAction(
+                    icon: Icons.receipt_long,
+                    label: 'Tarif Klinik',
+                    color: AppTheme.success,
+                    onTap: () => widget.onAction?.call('view_tarif'),
                   ),
                   _QuickAction(
                     icon: Icons.history,
                     label: 'Riwayat',
                     color: AppTheme.info,
-                    onTap: () {},
+                    onTap: () => widget.onNavigate?.call(3),
                   ),
                 ],
               ),
@@ -199,14 +214,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'Aktivitas Terkini',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('Lihat Semua'),
-                ),
+                TextButton(onPressed: () {}, child: const Text('Lihat Semua')),
               ],
             ),
             const SizedBox(height: 8),
-            ..._recentActivities.map((activity) => _ActivityTile(item: activity)),
+            ..._recentActivities.map(
+              (activity) => _ActivityTile(item: activity),
+            ),
           ],
         ),
       ),
@@ -308,9 +322,7 @@ class _ActivityTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withAlpha(50),
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor.withAlpha(50)),
       ),
       child: Row(
         children: [
@@ -337,20 +349,14 @@ class _ActivityTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   item.subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),
           ),
           Text(
             timeFormat.format(item.time),
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade400,
-            ),
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
           ),
         ],
       ),

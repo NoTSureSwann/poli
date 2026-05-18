@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_theme.dart';
 
 class TermsScreen extends StatefulWidget {
@@ -15,6 +16,12 @@ class _TermsScreenState extends State<TermsScreen> {
   bool _termsAccepted = false;
   bool _privacyAccepted = false;
   bool _isLoading = false;
+
+  Future<void> _launchUrl(String url) async {
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
+  }
 
   Future<void> _acceptTerms() async {
     setState(() {
@@ -62,7 +69,22 @@ class _TermsScreenState extends State<TermsScreen> {
             CheckboxListTile(
               value: _termsAccepted,
               onChanged: (val) => setState(() => _termsAccepted = val ?? false),
-              title: const Text('Saya menyetujui Syarat & Ketentuan'),
+              title: Wrap(
+                children: [
+                  const Text('Saya menyetujui '),
+                  GestureDetector(
+                    onTap: () =>
+                        _launchUrl('https://klinik-merah-putih.com/terms'),
+                    child: const Text(
+                      'Syarat & Ketentuan',
+                      style: TextStyle(
+                        color: AppTheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               controlAffinity: ListTileControlAffinity.leading,
               activeColor: AppTheme.primary,
             ),
@@ -70,7 +92,22 @@ class _TermsScreenState extends State<TermsScreen> {
               value: _privacyAccepted,
               onChanged: (val) =>
                   setState(() => _privacyAccepted = val ?? false),
-              title: const Text('Saya menyetujui Kebijakan Privasi'),
+              title: Wrap(
+                children: [
+                  const Text('Saya menyetujui '),
+                  GestureDetector(
+                    onTap: () =>
+                        _launchUrl('https://klinik-merah-putih.com/privacy'),
+                    child: const Text(
+                      'Kebijakan Privasi',
+                      style: TextStyle(
+                        color: AppTheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               controlAffinity: ListTileControlAffinity.leading,
               activeColor: AppTheme.primary,
             ),

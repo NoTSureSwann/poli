@@ -13,6 +13,11 @@ class LoadRecords extends MedicalRecordEvent {
 
 class LoadMoreRecords extends MedicalRecordEvent {}
 
+class CreateRecord extends MedicalRecordEvent {
+  final MedicalRecordModel record;
+  CreateRecord(this.record);
+}
+
 // ─── States ──────────────────────────────────────────────────────
 
 abstract class MedicalRecordState {}
@@ -20,6 +25,13 @@ abstract class MedicalRecordState {}
 class RecordInitial extends MedicalRecordState {}
 
 class RecordLoading extends MedicalRecordState {}
+
+class RecordSubmitting extends MedicalRecordState {}
+
+class RecordSubmitted extends MedicalRecordState {
+  final MedicalRecordModel record;
+  RecordSubmitted(this.record);
+}
 
 class RecordLoaded extends MedicalRecordState {
   final List<MedicalRecordModel> records;
@@ -59,6 +71,17 @@ class MedicalRecordBloc extends Bloc<MedicalRecordEvent, MedicalRecordState> {
   MedicalRecordBloc() : super(RecordInitial()) {
     on<LoadRecords>(_onLoadRecords);
     on<LoadMoreRecords>(_onLoadMoreRecords);
+    on<CreateRecord>(_onCreateRecord);
+  }
+
+  Future<void> _onCreateRecord(
+    CreateRecord event,
+    Emitter<MedicalRecordState> emit,
+  ) async {
+    emit(RecordSubmitting());
+    await Future.delayed(const Duration(milliseconds: 500));
+    _allRecords.insert(0, event.record);
+    emit(RecordSubmitted(event.record));
   }
 
   Future<void> _onLoadRecords(

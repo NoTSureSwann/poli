@@ -4,7 +4,9 @@ const { success, error, paginated } = require('../../utils/response');
 const getMedicalRecordsByPatient = async (req, res) => {
   const { patientId } = req.params;
   const { page = 1, limit = 10 } = req.query;
-  const offset = (page - 1) * limit;
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+  const limitNum = Math.max(parseInt(limit, 10) || 10, 1);
+  const offset = (pageNum - 1) * limitNum;
 
   try {
     const queryStr = `
@@ -15,15 +17,15 @@ const getMedicalRecordsByPatient = async (req, res) => {
       ORDER BY rm.tanggal_kunjungan DESC
       LIMIT $2 OFFSET $3
     `;
-    const countStr = 'SELECT COUNT(*) FROM rekam_medis WHERE pasien_id = $1';
+    const countStr = 'SELECT COUNT(*) as total FROM rekam_medis WHERE pasien_id = $1';
 
     const [result, countResult] = await Promise.all([
-      db.query(queryStr, [patientId, limit, offset]),
+      db.query(queryStr, [patientId, limitNum, offset]),
       db.query(countStr, [patientId])
     ]);
 
-    const total = parseInt(countResult.rows[0].count);
-    return paginated(res, result.rows, total, page, limit);
+    const total = parseInt(countResult.rows[0].total || 0);
+    return paginated(res, result.rows, total, pageNum, limitNum);
   } catch (err) {
     console.error(err);
     return error(res, 'Gagal mengambil rekam medis', 500, err.message);
@@ -39,11 +41,12 @@ const createMedicalRecord = async (req, res) => {
         pasien_id, dokter_id, keluhan_utama, pemeriksaan_fisik, diagnosis, tindakan_rencana, 
         icd10_code, tekanan_darah, nadi, suhu, berat_badan, tinggi_badan, saturasi_oksigen, catatan_tambahan
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
-      RETURNING *`,
+      `,
       [pasien_id, req.user.id, keluhan_utama, pemeriksaan_fisik, diagnosis, tindakan_rencana, icd10_code, tekanan_darah, nadi, suhu, berat_badan, tinggi_badan, saturasi_oksigen, catatan_tambahan]
     );
 
-    return success(res, result.rows[0], 'Rekam medis berhasil disimpan', 201);
+    const created = await db.query('SELECT * FROM rekam_medis WHERE id = $1', [result.lastID]);
+    return success(res, created.rows[0], 'Rekam medis berhasil disimpan', 201);
   } catch (err) {
     console.error(err);
     return error(res, 'Gagal menyimpan rekam medis', 500, err.message);

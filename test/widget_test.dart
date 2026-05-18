@@ -1,26 +1,14 @@
 // Basic widget test for Klinik Merah Putih app.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:klinik/main.dart';
-import 'package:klinik/services/auth_service.dart';
 
 void main() {
-  testWidgets('App renders terms screen on first launch', (WidgetTester tester) async {
-    final authService = AuthService();
-    
-    await tester.pumpWidget(
-      ChangeNotifierProvider<AuthService>.value(
-        value: authService,
-        child: const MyApp(
-          initialDarkMode: false,
-          termsAccepted: false,
-        ),
-      ),
-    );
+  testWidgets('App renders login screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const KlinikApp(initialDarkMode: false));
+    await tester.pumpAndSettle();
 
-    // Verify terms screen is shown
-    expect(find.text('Selamat Datang di Klinik Merah Putih'), findsOneWidget);
-    expect(find.text('Lanjutkan'), findsOneWidget);
+    // Verify login screen is shown (since no token is stored)
+    expect(find.text('Login'), findsWidgets);
   });
 }
