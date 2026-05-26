@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/poli_model.dart';
+import '../features/poli/data/models/poli_model.dart';
 
 class SupabaseService {
   final supabase = Supabase.instance.client;

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../models/poli_model.dart';
+import '../features/poli/data/models/poli_model.dart';
 
 class MockApiService {
   // Anda dapat mengganti ini dengan URL MockAPI sungguhan Anda.

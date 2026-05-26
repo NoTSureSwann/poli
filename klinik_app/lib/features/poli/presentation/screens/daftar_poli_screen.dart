@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/poli_model.dart';
-import '../services/firebase_service.dart';
-import '../services/mock_api_service.dart';
+import '../../data/models/poli_model.dart';
+import '../../../../services/firebase_service.dart';
+import '../../../../services/mock_api_service.dart';
+import '../../../../screens/pendaftaran_screen.dart';
 
 class DaftarPoliScreen extends StatefulWidget {
   const DaftarPoliScreen({super.key});
@@ -109,19 +110,45 @@ class _DaftarPoliScreenState extends State<DaftarPoliScreen> {
     if (poli.isEmpty) {
       return const Center(child: Text('Tidak ada poli ditemukan.'));
     }
+    
+    // Group by kategori
+    final Map<String, List<PoliModel>> groupedPoli = {};
+    for (var p in poli) {
+      groupedPoli.putIfAbsent(p.kategori, () => []).add(p);
+    }
+
     return ListView.builder(
-      itemCount: poli.length,
+      itemCount: groupedPoli.length,
       itemBuilder: (context, index) {
-        final item = poli[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.local_hospital)),
-            title: Text(item.namaPoli, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${item.deskripsi}\nBuka: ${item.jamBuka} - ${item.jamTutup}'),
-            isThreeLine: true,
-            trailing: const Icon(Icons.chevron_right),
+        final kategori = groupedPoli.keys.elementAt(index);
+        final subPoliList = groupedPoli[kategori]!;
+
+        return ExpansionTile(
+          title: Text(
+            'Kategori: $kategori', 
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
+          initiallyExpanded: true,
+          children: subPoliList.map((item) {
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.local_hospital)),
+                title: Text(item.namaPoli, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${item.deskripsi}\nBuka: ${item.jamBuka} - ${item.jamTutup}'),
+                isThreeLine: true,
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PendaftaranScreen(initialPoliId: item.id),
+                    ),
+                  );
+                },
+              ),
+            );
+          }).toList(),
         );
       },
     );

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/poli_model.dart';
+import '../features/poli/data/models/poli_model.dart';
 import '../services/firebase_service.dart';
 import '../services/mock_api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PendaftaranScreen extends StatefulWidget {
-  const PendaftaranScreen({super.key});
+  final String? initialPoliId;
+
+  const PendaftaranScreen({super.key, this.initialPoliId});
 
   @override
   State<PendaftaranScreen> createState() => _PendaftaranScreenState();
@@ -25,6 +28,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedPoliId = widget.initialPoliId;
     _loadPoli();
   }
 
@@ -85,9 +89,12 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
     setState(() => _isValidating = false);
 
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final pasienId = currentUser?.id ?? 'guest-user';
+
     // ─── INSERT ANTRIAN ────────────────────────────────────
     final nomorAntrian = await _firebaseService.daftarAntrian(
-      pasienId: 'demo-user-001', // Placeholder; ganti setelah auth terintegrasi
+      pasienId: pasienId,
       poliId: _selectedPoliId!,
       keluhan: _keluhanController.text,
       tanggal: tanggalStr,

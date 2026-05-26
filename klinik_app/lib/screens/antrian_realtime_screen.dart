@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/poli_model.dart';
+import '../features/poli/data/models/poli_model.dart';
 import '../services/firebase_service.dart';
 import '../services/mock_api_service.dart';
 

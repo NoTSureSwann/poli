@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/poli_model.dart';
+import '../features/poli/data/models/poli_model.dart';
 
 /// Service layer untuk interaksi real-time dengan Cloud Firestore.
 /// Menyediakan Stream-based API untuk data poli, antrian, dan riwayat kunjungan.
@@ -176,12 +176,15 @@ class FirebaseService {
     if (existing.docs.isNotEmpty) return; // Sudah ada data
 
     final seedPoli = [
-      {'nama_poli': 'Poli Umum', 'deskripsi': 'Pemeriksaan kesehatan umum.', 'jam_buka': '08:00', 'jam_tutup': '16:00', 'icon': 'local_hospital'},
-      {'nama_poli': 'Poli Gigi', 'deskripsi': 'Perawatan gigi dan mulut.', 'jam_buka': '08:00', 'jam_tutup': '14:00', 'icon': 'mood'},
-      {'nama_poli': 'Poli Anak', 'deskripsi': 'Kesehatan ibu dan anak.', 'jam_buka': '09:00', 'jam_tutup': '15:00', 'icon': 'child_care'},
-      {'nama_poli': 'Poli Kandungan', 'deskripsi': 'Kesehatan ibu hamil dan kandungan.', 'jam_buka': '08:00', 'jam_tutup': '14:00', 'icon': 'pregnant_woman'},
-      {'nama_poli': 'Poli Mata', 'deskripsi': 'Gangguan penglihatan dan kesehatan mata.', 'jam_buka': '09:00', 'jam_tutup': '15:00', 'icon': 'visibility'},
-      {'nama_poli': 'Poli THT', 'deskripsi': 'Telinga, hidung, dan tenggorokan.', 'jam_buka': '08:00', 'jam_tutup': '14:00', 'icon': 'hearing'},
+      {'nama_poli': 'Poli Umum', 'kategori': 'Umum', 'deskripsi': 'Pemeriksaan kesehatan umum.', 'jam_buka': '08:00', 'jam_tutup': '16:00', 'icon': 'local_hospital'},
+      {'nama_poli': 'Poli Gigi & Mulut', 'kategori': 'Gigi', 'deskripsi': 'Perawatan gigi dan mulut.', 'jam_buka': '08:00', 'jam_tutup': '14:00', 'icon': 'mood'},
+      {'nama_poli': 'Poli Bedah Mulut', 'kategori': 'Gigi', 'deskripsi': 'Operasi dan bedah rahang mulut.', 'jam_buka': '10:00', 'jam_tutup': '15:00', 'icon': 'healing'},
+      {'nama_poli': 'Poli Tumbuh Kembang', 'kategori': 'Anak', 'deskripsi': 'Pemantauan tumbuh kembang anak.', 'jam_buka': '09:00', 'jam_tutup': '15:00', 'icon': 'child_care'},
+      {'nama_poli': 'Poli Pediatri', 'kategori': 'Anak', 'deskripsi': 'Pemeriksaan penyakit pada anak.', 'jam_buka': '08:00', 'jam_tutup': '16:00', 'icon': 'face'},
+      {'nama_poli': 'Poli Kandungan (Obgyn)', 'kategori': 'Kandungan', 'deskripsi': 'Kesehatan ibu hamil dan kandungan.', 'jam_buka': '08:00', 'jam_tutup': '14:00', 'icon': 'pregnant_woman'},
+      {'nama_poli': 'Poli Mata', 'kategori': 'Spesialis', 'deskripsi': 'Gangguan penglihatan dan mata.', 'jam_buka': '09:00', 'jam_tutup': '15:00', 'icon': 'visibility'},
+      {'nama_poli': 'Poli THT', 'kategori': 'Spesialis', 'deskripsi': 'Telinga, hidung, dan tenggorokan.', 'jam_buka': '08:00', 'jam_tutup': '14:00', 'icon': 'hearing'},
+      {'nama_poli': 'Poli Penyakit Dalam', 'kategori': 'Spesialis', 'deskripsi': 'Pemeriksaan organ dalam.', 'jam_buka': '08:00', 'jam_tutup': '16:00', 'icon': 'favorite'},
     ];
 
     for (final poli in seedPoli) {

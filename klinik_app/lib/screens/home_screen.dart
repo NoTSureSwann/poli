@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'daftar_poli_screen.dart';
+import '../features/poli/presentation/screens/daftar_poli_screen.dart';
 import 'pendaftaran_screen.dart';
 import 'riwayat_pasien_screen.dart';
 import 'chat_ai_screen.dart';
