@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ─── FIREBASE ────────────────────────────────────────────
-  // Inisialisasi Firebase. Jika firebase_options.dart belum ada,
-  // jalankan: dart pub global activate flutterfire_cli && flutterfire configure
+  // Inisialisasi Firebase. 
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     debugPrint('Firebase init gagal (belum dikonfigurasi?): $e');
   }
