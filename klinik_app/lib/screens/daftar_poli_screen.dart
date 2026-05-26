@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/poli_model.dart';
+import '../services/firebase_service.dart';
 import '../services/mock_api_service.dart';
 
 class DaftarPoliScreen extends StatefulWidget {
@@ -10,33 +11,26 @@ class DaftarPoliScreen extends StatefulWidget {
 }
 
 class _DaftarPoliScreenState extends State<DaftarPoliScreen> {
-  final MockApiService _apiService = MockApiService();
-  late Future<List<PoliModel>> _futurePoli;
-  List<PoliModel> _allPoli = [];
-  List<PoliModel> _filteredPoli = [];
+  final FirebaseService _firebaseService = FirebaseService();
+  final MockApiService _mockService = MockApiService();
+  String _searchQuery = '';
+
+  /// Gunakan Firebase stream jika tersedia, fallback ke MockAPI.
+  late Stream<List<PoliModel>> _poliStream;
+  bool _useFirebase = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    _initStream();
   }
 
-  void _fetchData() {
-    _futurePoli = _apiService.getDaftarPoli();
-    _futurePoli.then((data) {
-      setState(() {
-        _allPoli = data;
-        _filteredPoli = data;
-      });
-    });
-  }
-
-  void _filterPoli(String query) {
-    setState(() {
-      _filteredPoli = _allPoli
-          .where((poli) => poli.namaPoli.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    });
+  void _initStream() {
+    try {
+      _poliStream = _firebaseService.getPoliStream();
+    } catch (e) {
+      _useFirebase = false;
+    }
   }
 
   @override
@@ -45,10 +39,11 @@ class _DaftarPoliScreenState extends State<DaftarPoliScreen> {
       appBar: AppBar(title: const Text('Daftar Poli')),
       body: Column(
         children: [
+          // Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              onChanged: _filterPoli,
+              onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
                 hintText: 'Cari Poli...',
                 prefixIcon: const Icon(Icons.search),
@@ -56,38 +51,79 @@ class _DaftarPoliScreenState extends State<DaftarPoliScreen> {
               ),
             ),
           ),
+          // Real-time list
           Expanded(
-            child: FutureBuilder<List<PoliModel>>(
-              future: _futurePoli,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return const Center(child: Text('Gagal memuat data.'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Tidak ada poli tersedia.'));
-                }
-
-                return ListView.builder(
-                  itemCount: _filteredPoli.length,
-                  itemBuilder: (context, index) {
-                    final poli = _filteredPoli[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(child: Icon(Icons.local_hospital)),
-                        title: Text(poli.namaPoli, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('${poli.deskripsi}\nBuka: ${poli.jamBuka} - ${poli.jamTutup}'),
-                        isThreeLine: true,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            child: _useFirebase
+                ? _buildFirebaseList()
+                : _buildMockList(),
           ),
         ],
       ),
+    );
+  }
+
+  /// StreamBuilder: real-time dari Cloud Firestore.
+  Widget _buildFirebaseList() {
+    return StreamBuilder<List<PoliModel>>(
+      stream: _poliStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final allPoli = snapshot.data ?? [];
+        // Jika Firestore kosong, fallback ke mock
+        if (allPoli.isEmpty) {
+          return _buildMockList();
+        }
+        return _buildPoliListView(_filterPoli(allPoli));
+      },
+    );
+  }
+
+  /// FutureBuilder fallback: data dummy dari MockAPI.
+  Widget _buildMockList() {
+    return FutureBuilder<List<PoliModel>>(
+      future: _mockService.getDaftarPoli(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final data = snapshot.data ?? [];
+        return _buildPoliListView(_filterPoli(data));
+      },
+    );
+  }
+
+  List<PoliModel> _filterPoli(List<PoliModel> poli) {
+    if (_searchQuery.isEmpty) return poli;
+    return poli
+        .where((p) => p.namaPoli.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+  }
+
+  Widget _buildPoliListView(List<PoliModel> poli) {
+    if (poli.isEmpty) {
+      return const Center(child: Text('Tidak ada poli ditemukan.'));
+    }
+    return ListView.builder(
+      itemCount: poli.length,
+      itemBuilder: (context, index) {
+        final item = poli[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.local_hospital)),
+            title: Text(item.namaPoli, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('${item.deskripsi}\nBuka: ${item.jamBuka} - ${item.jamTutup}'),
+            isThreeLine: true,
+            trailing: const Icon(Icons.chevron_right),
+          ),
+        );
+      },
     );
   }
 }

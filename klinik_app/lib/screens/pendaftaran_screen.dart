@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/poli_model.dart';
+import '../services/firebase_service.dart';
 import '../services/mock_api_service.dart';
-import '../services/supabase_service.dart';
 
 class PendaftaranScreen extends StatefulWidget {
   const PendaftaranScreen({super.key});
@@ -12,14 +12,15 @@ class PendaftaranScreen extends StatefulWidget {
 
 class _PendaftaranScreenState extends State<PendaftaranScreen> {
   final _formKey = GlobalKey<FormState>();
-  final MockApiService _apiService = MockApiService();
-  final SupabaseService _supabaseService = SupabaseService();
-  
+  final FirebaseService _firebaseService = FirebaseService();
+  final MockApiService _mockService = MockApiService();
+
   List<PoliModel> _daftarPoli = [];
   String? _selectedPoliId;
   DateTime? _selectedDate;
   final TextEditingController _keluhanController = TextEditingController();
   bool _isLoading = false;
+  bool _isValidating = false;
 
   @override
   void initState() {
@@ -28,35 +29,98 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
   }
 
   void _loadPoli() async {
-    final data = await _apiService.getDaftarPoli();
-    setState(() {
-      _daftarPoli = data;
-    });
+    // Coba ambil dari Firebase stream, jika gagal gunakan MockAPI
+    try {
+      _firebaseService.getPoliStream().listen((data) {
+        if (data.isNotEmpty && mounted) {
+          setState(() => _daftarPoli = data);
+        }
+      }, onError: (_) async {
+        final mockData = await _mockService.getDaftarPoli();
+        if (mounted) setState(() => _daftarPoli = mockData);
+      });
+    } catch (e) {
+      final mockData = await _mockService.getDaftarPoli();
+      if (mounted) setState(() => _daftarPoli = mockData);
+    }
   }
 
   void _submitForm() async {
-    if (_formKey.currentState!.validate() && _selectedDate != null && _selectedPoliId != null) {
-      setState(() => _isLoading = true);
-      
-      // Gunakan layanan supabase. (Akan gagal log jika credential belum diatur, namun tertangani try-catch)
-      final success = await _supabaseService.daftarAntrian(
-        _selectedPoliId!,
-        _keluhanController.text,
-        _selectedDate!.toIso8601String(),
-      );
-
-      setState(() => _isLoading = false);
-
-      if (!mounted) return;
-      if (success || true) { // Force true for mock demonstration
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pendaftaran berhasil! Nomor antrian Anda sedang diproses.')),
-        );
-        Navigator.pop(context);
-      }
-    } else {
+    if (!_formKey.currentState!.validate() || _selectedDate == null || _selectedPoliId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Harap lengkapi semua data termasuk tanggal kunjungan.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _isValidating = true;
+    });
+
+    final tanggalStr = _selectedDate!.toIso8601String().split('T')[0];
+
+    // ─── VALIDASI REAL-TIME ────────────────────────────────
+    // 1. Validasi poli masih ada di database
+    final poliValid = await _firebaseService.validatePoli(_selectedPoliId!);
+    if (!poliValid) {
+      if (!mounted) return;
+      setState(() { _isLoading = false; _isValidating = false; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⚠ Poli tidak ditemukan atau sudah dihapus.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    // 2. Validasi slot antrian tersedia
+    final slotAvailable = await _firebaseService.validateAntrianSlot(_selectedPoliId!, tanggalStr);
+    if (!slotAvailable) {
+      if (!mounted) return;
+      setState(() { _isLoading = false; _isValidating = false; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⚠ Slot antrian penuh untuk tanggal ini.'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    setState(() => _isValidating = false);
+
+    // ─── INSERT ANTRIAN ────────────────────────────────────
+    final nomorAntrian = await _firebaseService.daftarAntrian(
+      pasienId: 'demo-user-001', // Placeholder; ganti setelah auth terintegrasi
+      poliId: _selectedPoliId!,
+      keluhan: _keluhanController.text,
+      tanggal: tanggalStr,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (nomorAntrian > 0) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('✅ Pendaftaran Berhasil!'),
+          content: Text(
+            'Nomor antrian Anda: $nomorAntrian\n'
+            'Tanggal: $tanggalStr\n\n'
+            'Silakan datang 15 menit sebelum jadwal.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal mendaftarkan antrian. Silakan coba lagi.')),
       );
     }
   }
@@ -79,7 +143,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                         labelText: 'Pilih Poli',
                         border: OutlineInputBorder(),
                       ),
-                      value: _selectedPoliId,
+                      initialValue: _selectedPoliId,
                       items: _daftarPoli.map((poli) {
                         return DropdownMenuItem(
                           value: poli.id,
@@ -130,7 +194,14 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                       style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
                       onPressed: _isLoading ? null : _submitForm,
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                                const SizedBox(width: 12),
+                                Text(_isValidating ? 'Memvalidasi...' : 'Mendaftar...'),
+                              ],
+                            )
                           : const Text('Daftar Antrian', style: TextStyle(fontSize: 16)),
                     ),
                   ],

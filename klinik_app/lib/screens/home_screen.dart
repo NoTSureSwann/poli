@@ -3,6 +3,7 @@ import 'daftar_poli_screen.dart';
 import 'pendaftaran_screen.dart';
 import 'riwayat_pasien_screen.dart';
 import 'chat_ai_screen.dart';
+import 'antrian_realtime_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -29,6 +30,7 @@ class HomeScreen extends StatelessWidget {
         children: [
           _buildMenuCard(context, 'Daftar Poli', Icons.local_hospital, Colors.blue, const DaftarPoliScreen()),
           _buildMenuCard(context, 'Pendaftaran', Icons.assignment, Colors.green, const PendaftaranScreen()),
+          _buildMenuCard(context, 'Antrian Live', Icons.live_tv, Colors.red, const AntrianRealtimeScreen()),
           _buildMenuCard(context, 'Riwayat', Icons.history, Colors.orange, const RiwayatPasienScreen()),
           _buildMenuCard(context, 'Tanya AI', Icons.chat, Colors.purple, const ChatAiScreen()),
         ],

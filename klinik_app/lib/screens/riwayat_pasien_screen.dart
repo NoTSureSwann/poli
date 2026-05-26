@@ -45,27 +45,38 @@ class _RiwayatPasienScreenState extends State<RiwayatPasienScreen> {
               itemBuilder: (context, index) {
                 final item = data[index];
                 final status = item['status'] as String;
-                
+
                 Color statusColor = Colors.grey;
                 if (status == 'selesai') statusColor = Colors.green;
                 if (status == 'menunggu') statusColor = Colors.orange;
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: ListTile(
                     title: Text('Tanggal: ${item['tanggal']}'),
-                    subtitle: Text('Poli: ${item['poli']['nama_poli']}\nKeluhan: ${item['keluhan']}'),
+                    subtitle: Text(
+                      'Poli: ${item['poli']['nama_poli']}\nKeluhan: ${item['keluhan']}',
+                    ),
                     isThreeLine: true,
                     trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.2),
+                        color: statusColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: statusColor),
                       ),
                       child: Text(
                         status.toUpperCase(),
-                        style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
