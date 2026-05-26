@@ -8,7 +8,7 @@ void main() async {
   // URL Supabase Anda. Pastikan untuk mengganti 'public-anon-key' dengan kunci asli Anda.
   await Supabase.initialize(
     url: 'https://jxamnlnxkleljndsbkda.supabase.co',
-    anonKey: 'public-anon-key', // TODO: Ganti dengan anon key Anda
+    anonKey: 'sb_publishable_5MYlPv0U9VT3rLs8uZSZzA_0UgE4cX_', 
   );
 
   runApp(const MyApp());
