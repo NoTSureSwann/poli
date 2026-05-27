@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../features/poli/data/models/poli_model.dart';
+import 'package:klinik_app/features/poli/data/models/poli_model.dart';
 
 /// Service layer untuk interaksi real-time dengan Cloud Firestore.
 /// Menyediakan Stream-based API untuk data poli, antrian, dan riwayat kunjungan.
@@ -57,7 +57,7 @@ class FirebaseService {
       return query.docs.length < 50; // Maks 50 antrian per poli per hari
     } catch (e) {
       debugPrint('Error validasi slot: $e');
-      return true; // Izinkan jika gagal cek (graceful fallback)
+      return false; // [SEC-18 FIX]: Fail-closed — tolak jika tidak bisa verifikasi
     }
   }
 

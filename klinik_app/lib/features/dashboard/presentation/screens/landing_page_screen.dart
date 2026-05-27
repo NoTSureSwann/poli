@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../auth/presentation/screens/login_screen.dart';
-import '../../../auth/presentation/screens/register_screen.dart';
+import 'package:klinik_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:klinik_app/features/auth/presentation/screens/register_screen.dart';
 import '../../../sipas/presentation/screens/login_sipas_screen.dart';
 
 class LandingPageScreen extends StatelessWidget {

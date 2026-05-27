@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:klinik_app/features/sipas/presentation/screens/form_pendaftaran_sipas_screen.dart';
+import 'package:klinik_app/core/utils/security_utils.dart';
 
 class DashboardLoketScreen extends StatelessWidget {
   const DashboardLoketScreen({super.key});
@@ -69,7 +70,7 @@ class DashboardLoketScreen extends StatelessWidget {
                       child: Text(item['no'], style: const TextStyle(fontSize: 12, color: Colors.blue)),
                     ),
                     title: Text(item['nama'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('NIK: ${item['nik']} | Poli: ${item['poli']}'),
+                    subtitle: Text('NIK: ${SecurityUtils.maskNik(item['nik'])} | Poli: ${item['poli']}'),
                     trailing: _buildStatusBadge(item['status']),
                   ),
                 );

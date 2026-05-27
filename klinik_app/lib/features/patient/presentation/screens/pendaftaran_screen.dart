@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../features/poli/data/models/poli_model.dart';
-import '../services/firebase_service.dart';
-import '../services/mock_api_service.dart';
+import 'package:klinik_app/features/poli/data/models/poli_model.dart';
+import 'package:klinik_app/services/firebase/firebase_service.dart';
+import 'package:klinik_app/services/api/mock_api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:klinik_app/core/utils/security_utils.dart';
 
 class PendaftaranScreen extends StatefulWidget {
   final String? initialPoliId;
@@ -89,14 +90,29 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
     setState(() => _isValidating = false);
 
+    // [SEC-05 FIX]: Enforce login wajib sebelum daftar antrian
     final currentUser = Supabase.instance.client.auth.currentUser;
-    final pasienId = currentUser?.id ?? 'guest-user';
+    if (currentUser == null) {
+      if (!mounted) return;
+      setState(() { _isLoading = false; _isValidating = false; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠ Anda harus login terlebih dahulu untuk mendaftar antrian.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final pasienId = currentUser.id;
 
     // ─── INSERT ANTRIAN ────────────────────────────────────
+    // [SEC-14 FIX]: Sanitasi input keluhan untuk mencegah XSS/injection
+    final sanitizedKeluhan = SecurityUtils.sanitizeInput(_keluhanController.text);
+    
     final nomorAntrian = await _firebaseService.daftarAntrian(
       pasienId: pasienId,
       poliId: _selectedPoliId!,
-      keluhan: _keluhanController.text,
+      keluhan: sanitizedKeluhan,
       tanggal: tanggalStr,
     );
 

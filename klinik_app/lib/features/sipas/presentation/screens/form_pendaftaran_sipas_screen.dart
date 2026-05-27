@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:klinik_app/services/pdf_service.dart';
+import 'package:klinik_app/core/utils/pdf_service.dart';
 import 'package:intl/intl.dart';
 
 class FormPendaftaranSipasScreen extends StatefulWidget {

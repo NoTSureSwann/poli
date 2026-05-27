@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:klinik_app/services/firebase/log_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as legacy_provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
-import 'features/dashboard/presentation/screens/landing_page_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'core/router/app_router.dart';
 
 // Clean Architecture Dependency Imports untuk Automation
 import 'features/automation/data/datasources/automation_remote_data_source.dart';
@@ -14,8 +18,10 @@ import 'features/automation/presentation/providers/automation_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ─── LOAD ENV VARIABLES ──────────────────────────────────
+  await dotenv.load(fileName: ".env");
+
   // ─── FIREBASE ────────────────────────────────────────────
-  // Inisialisasi Firebase. 
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -25,22 +31,69 @@ void main() async {
   }
 
   // ─── SUPABASE ────────────────────────────────────────────
+  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? 'https://jxamnlnxkleljndsbkda.supabase.co';
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? 'sb_publishable_5MYlPv0U9VT3rLs8uZSZzA_0UgE4cX_';
+  
   await Supabase.initialize(
-    url: 'https://jxamnlnxkleljndsbkda.supabase.co',
-    anonKey: 'sb_publishable_5MYlPv0U9VT3rLs8uZSZzA_0UgE4cX_',
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
 
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  final LogService _logService = LogService();
+  String _currentSessionId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startLogSession();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (_currentSessionId.isNotEmpty) {
+      _logService.endSession(_currentSessionId);
+    }
+    super.dispose();
+  }
+
+  void _startLogSession() async {
+    _currentSessionId = await _logService.startSession();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startLogSession();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      if (_currentSessionId.isNotEmpty) {
+        _logService.endSession(_currentSessionId);
+        _currentSessionId = '';
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MultiProvider(
+    return legacy_provider.MultiProvider(
       providers: [
-        ChangeNotifierProvider(
+        legacy_provider.ChangeNotifierProvider(
           create: (_) => AutomationProvider(
             sendAiPromptUseCase: SendAiPromptUseCase(
               AutomationRepositoryImpl(
@@ -50,14 +103,18 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
-        title: 'Klinik App',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          useMaterial3: true,
-        ),
-        home: const LandingPageScreen(),
+      child: Consumer(
+        builder: (context, ref, child) {
+          final router = ref.watch(routerProvider);
+          return MaterialApp.router(
+            title: 'Klinik App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.system,
+            routerConfig: router,
+          );
+        },
       ),
     );
   }

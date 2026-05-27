@@ -1,9 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../features/poli/data/models/poli_model.dart';
+import 'package:klinik_app/features/poli/data/models/poli_model.dart';
 
 class SupabaseService {
   final supabase = Supabase.instance.client;
+
+  /// [SEC-05 FIX]: Helper yang memastikan user sudah login.
+  /// Melempar exception jika belum terautentikasi.
+  String _requireAuthUserId() {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('Sesi login tidak ditemukan. Silakan login ulang.');
+    }
+    return userId;
+  }
 
   Future<List<PoliModel>> getDaftarPoli() async {
     try {
@@ -17,12 +27,11 @@ class SupabaseService {
 
   Future<bool> daftarAntrian(String poliId, String keluhan, String tanggal) async {
     try {
-      final userId = supabase.auth.currentUser?.id;
-      // Jika belum login, kita mock userId untuk sementara agar UI tidak error.
-      final safeUserId = userId ?? '00000000-0000-0000-0000-000000000000';
+      // [SEC-05 FIX]: Wajib login, tidak ada lagi fallback ke UUID dummy.
+      final userId = _requireAuthUserId();
       
       await supabase.from('antrian').insert({
-        'pasien_id': safeUserId,
+        'pasien_id': userId,
         'poli_id': poliId,
         'keluhan': keluhan,
         'tanggal': tanggal,
@@ -37,13 +46,13 @@ class SupabaseService {
   
   Future<List<Map<String, dynamic>>> getRiwayatPasien() async {
      try {
-      final userId = supabase.auth.currentUser?.id;
-      final safeUserId = userId ?? '00000000-0000-0000-0000-000000000000';
+      // [SEC-05 FIX]: Wajib login, tidak ada lagi fallback ke UUID dummy.
+      final userId = _requireAuthUserId();
       
       final response = await supabase
           .from('antrian')
           .select('*, poli:poli_id(nama_poli)')
-          .eq('pasien_id', safeUserId);
+          .eq('pasien_id', userId);
           
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -52,3 +61,4 @@ class SupabaseService {
     }
   }
 }
+

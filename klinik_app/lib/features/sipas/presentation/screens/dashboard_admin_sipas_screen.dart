@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:klinik_app/features/sipas/presentation/screens/dashboard_analytics_screen.dart';
 
 class DashboardAdminSipasScreen extends StatelessWidget {
   const DashboardAdminSipasScreen({super.key});
@@ -78,6 +79,21 @@ class DashboardAdminSipasScreen extends StatelessWidget {
           onPressed: () {},
           icon: const Icon(Icons.medical_services),
           label: const Text('Tambah Obat'),
+        ),
+        const SizedBox(width: 16),
+        ElevatedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DashboardAnalyticsScreen()),
+            );
+          },
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('Analisis ML'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.purple.shade600,
+            foregroundColor: Colors.white,
+          ),
         ),
         const Spacer(),
         OutlinedButton.icon(

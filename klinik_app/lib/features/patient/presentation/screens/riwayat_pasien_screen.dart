@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/mock_api_service.dart';
+import 'package:klinik_app/services/api/mock_api_service.dart';
 
 class RiwayatPasienScreen extends StatefulWidget {
   const RiwayatPasienScreen({super.key});

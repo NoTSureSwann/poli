@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:klinik_app/features/automation/presentation/providers/automation_provider.dart';
+import 'package:klinik_app/core/utils/security_utils.dart';
 
 class DashboardDokterSipasScreen extends StatefulWidget {
   const DashboardDokterSipasScreen({super.key});
@@ -115,7 +116,7 @@ class _DashboardDokterSipasScreenState extends State<DashboardDokterSipasScreen>
                   const Text('A-001', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue)),
                   const Divider(height: 24),
                   _infoRow('Nama', 'Budi Santoso'),
-                  _infoRow('NIK', '3201123456780001'),
+                  _infoRow('NIK', SecurityUtils.maskNik('3201123456780001')),
                   _infoRow('Tgl Lahir', '1990-05-12'),
                   const SizedBox(height: 16),
                   Container(

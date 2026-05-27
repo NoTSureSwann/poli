@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../features/poli/data/models/poli_model.dart';
-import '../services/firebase_service.dart';
-import '../services/mock_api_service.dart';
+import 'package:klinik_app/features/poli/data/models/poli_model.dart';
+import 'package:klinik_app/services/firebase/firebase_service.dart';
+import 'package:klinik_app/services/api/mock_api_service.dart';
 
 class AntrianRealtimeScreen extends StatefulWidget {
   const AntrianRealtimeScreen({super.key});
