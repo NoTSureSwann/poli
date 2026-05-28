@@ -43,4 +43,23 @@ class InputSanitizer {
     
     return sanitized.trim();
   }
+
+  /// Validate Email with Regex
+  static bool isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email.trim());
+  }
+
+  /// Validate Password: min 8 chars, 1 uppercase, 1 number
+  static bool isValidPassword(String password) {
+    if (password.length < 8) return false;
+    final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+    final hasDigits = RegExp(r'[0-9]').hasMatch(password);
+    return hasUppercase && hasDigits;
+  }
+
+  /// Strip dangerous characters like <, >, &, ', "
+  static String stripDangerousChars(String input) {
+    return input.replaceAll(RegExp(r'[<>&'"'"'"]'), '').trim();
+  }
 }

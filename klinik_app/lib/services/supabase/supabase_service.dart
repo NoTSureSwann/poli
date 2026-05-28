@@ -44,15 +44,19 @@ class SupabaseService {
     }
   }
   
-  Future<List<Map<String, dynamic>>> getRiwayatPasien() async {
+  Future<List<Map<String, dynamic>>> getRiwayatPasien({int page = 0}) async {
      try {
       // [SEC-05 FIX]: Wajib login, tidak ada lagi fallback ke UUID dummy.
       final userId = _requireAuthUserId();
+      final from = page * 10;
+      final to = from + 9;
       
       final response = await supabase
           .from('antrian')
           .select('*, poli:poli_id(nama_poli)')
-          .eq('pasien_id', userId);
+          .eq('pasien_id', userId)
+          .order('tanggal', ascending: false)
+          .range(from, to);
           
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {

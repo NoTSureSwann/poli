@@ -13,6 +13,8 @@ import 'package:klinik_app/features/sipas/presentation/screens/dashboard_admin_s
 import 'package:klinik_app/features/sipas/presentation/screens/dashboard_dokter_sipas_screen.dart';
 import 'package:klinik_app/features/sipas/presentation/screens/dashboard_farmasi_screen.dart';
 import 'package:klinik_app/features/sipas/presentation/screens/dashboard_loket_screen.dart';
+import 'package:klinik_app/core/guards/role_guard.dart';
+import 'package:klinik_app/screens/unauthorized_screen.dart';
 import 'main_layout.dart'; 
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -42,9 +44,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/home';
       }
 
+      // Role check using RoleGuard
+      if (isLoggedIn && authState.role != null) {
+        final path = state.uri.path;
+        // Don't check for auth routes and unauthorized screen
+        if (!isAuthRoute && path != '/unauthorized') {
+          if (!RoleGuard.canAccessRoute(path, authState.role!)) {
+            return '/unauthorized';
+          }
+        }
+      }
+
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/unauthorized',
+        builder: (context, state) => const UnauthorizedScreen(),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
